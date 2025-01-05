@@ -8,7 +8,7 @@
 - **Basic Node.js app** built with Express.js
 - **Dockerized Application** for portability and scalability
 - **CI/CD Pipeline** using Jenkins to automate the build, test, and deployment processes
-- **AWS Deployment** on ECS with EC2 instance  for a fully managed container solution
+- **AWS Deployment** on ECS with Fargate for a fully managed container solution
 - **Logging and Monitoring** via AWS CloudWatch
 
 ---
@@ -19,7 +19,7 @@
 - **Express.js**: Fast, minimalist web framework for Node.js
 - **Docker**: Containerization of the Node.js app
 - **Jenkins**: Continuous Integration/Continuous Deployment (CI/CD) automation
-- **AWS ECS (Elastic Container Service)**: For container orchestration with EC2 Instance
+- **AWS ECS (Elastic Container Service)**: For container orchestration with Fargate
 - **AWS CloudWatch**: For application logging and monitoring
 
 ---
@@ -108,22 +108,12 @@ To use this pipeline, ensure you have the **Docker**, **Git**, **AWS CLI**, and 
 
 ## ☁️ **AWS Deployment**
 
-The application can be deployed to AWS using **Elastic Container Service (ECS)** with **EC2 Instance**. This provides a fully managed environment for running the application in containers without managing the underlying infrastructure.
-
-Firstly configure your **AWS CLI**
-```bash
- ╭─sed@root3d
- ╰─λ aws configure
-AWS Access Key ID [None]: AKIAVIXXXXXXXXXXX
-AWS Secret Access Key [None]: +dyy7/i7oMT+fXXXXXXXXXXXXXXXXXX4ABg
-Default region name [None]: ap-south-1
-Default output format [None]: 
-```
+The application can be deployed to AWS using **Elastic Container Service (ECS)** with **Fargate**. This provides a fully managed environment for running the application in containers without managing the underlying infrastructure.
 
 ### **Deployment Steps**
 
-1. **AWS ECS with EC2 Instance**:
-   - Jenkins Groovy scripts for provisioning ECS and EC2 instances are located in the `root` directory labelled as Jenkinsfile.
+1. **AWS ECS with Fargate**:
+   - Jenkins Groovy scripts for provisioning ECS and Fargate tasks are located in the main directory labelled as Jenkinsfile.
    
 2. **Deploy to AWS**:
    - After provisioning your ECS instance, deploy the Docker image from Docker Hub to AWS ECS.
@@ -137,7 +127,7 @@ Default output format [None]:
 
 ### **AWS CloudWatch**
 
-- The application is configured to send logs to **AWS CloudWatch** in the **Jenkinsfile**.
+- To enable Monitoring we have to enable Monitoring while creating **Elastic Container Service**![Monitoring](image.png)
 - This allows you to monitor logs and application performance in real-time.
 
 ### **Docker Logs**
