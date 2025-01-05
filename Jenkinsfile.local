@@ -1,6 +1,6 @@
 // Jenkinsfile for running pipeline on local Jenkins server
 // Uncomment the stages you want to run
-
+// Required - https://plugins.jenkins.io/docker-plugin/
 pipeline {
     agent any
     stages {
@@ -12,33 +12,41 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t sed/node-app .'
+                    sh 'docker build -t swordx/archit-node-app .'
                 }
             }
         }
         stage('Test Application') {
             steps {
                 script {
-                    sh 'docker run -d -p 3000:3000 --name test-node-app sed/node-app'
+                    sh 'docker run -d -p 3000:3000 --name test-node-app swordx/archit-node-app'
                     sh 'sleep 3'
                     sh 'curl localhost:3000 || exit 1'
                     sh 'docker stop test-node-app && docker rm test-node-app'
                 }
             }
         }
-        // stage('Push to Docker Hub') {
-        //     steps {
-        //         withDockerRegistry(credentialsId: 'dockerhub-credentials') {
-        //             sh 'docker push sed/node-app'
-        //         }
-        //     }
-        // }
-    }
-    post {
-        always {
-            script {
-                sh 'docker system prune -f'
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    // Login to Docker Hub
+                    sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
+
+                    // Push the image to Docker Hub
+                    sh 'docker push ${DOCKER_IMAGE_NAME}'
+
+                    // Logout from Docker Hub
+                    sh 'docker logout'
+                }
             }
+        }
+}
+    post {
+        success {
+            echo 'Deployment completed successfully!'
+        }
+        failure {
+            echo 'There was an issue with the pipeline.'
         }
     }
 }

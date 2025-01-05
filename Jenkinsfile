@@ -1,75 +1,85 @@
+// Requirements:
+// https://plugins.jenkins.io/pipeline-aws/ - AWS Credentials
+// https://plugins.jenkins.io/docker-plugin/
 pipeline {
     agent any
-
     environment {
-        AWS_REGION = 'ap-south-1'           // AWS region where your Elastic Beanstalk environment is hosted
-        REPOSITORY_NAME = 'devops-app'         // Your Docker repository name on Docker Hub
-        IMAGE_TAG = 'latest'               // Docker image tag
-        DOCKER_REGISTRY = 'docker.io'      // Docker Hub registry URL - https://plugins.jenkins.io/docker-plugin/
-        AWS_EB_APP_NAME = 'archit-devops-app'    // Your Elastic Beanstalk application name
-        AWS_EB_ENV_NAME = 'archit-devops-app-env'     // Your Elastic Beanstalk environment name
-        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')  // Jenkins AWS credentials - https://plugins.jenkins.io/aws-credentials/
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key') // Jenkins AWS credentials 
+        DOCKER_IMAGE_NAME = 'swordx/archit-node-app'  // Docker image name
+        ECS_CLUSTER_NAME = 'architx'        // AWS ECS cluster name
+        ECS_SERVICE_NAME = 'MyService'        // ECS service name
+        ECS_TASK_DEFINITION = 'MyTask' // ECS task definition name
     }
-
     stages {
         stage('Clone Repository') {
             steps {
-                script {
-                    // Pulling the source code from GitHub repository
-                    git 'https://github.com/architmadankar/devops-task-archit.git'
-                }
+                git 'https://github.com/architmadankar/devops-task-archit.git'
             }
         }
-
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Building the Docker image
-                    sh 'docker build -t $DOCKER_REGISTRY/$REPOSITORY_NAME:$IMAGE_TAG .'
+                    sh 'docker build -t ${DOCKER_IMAGE_NAME} .'
                 }
             }
         }
-
-        stage('Run Tests') {
+        stage('Test Application') {
             steps {
                 script {
-                    sh 'docker run -d -p 3000:3000 --name test-node-app $DOCKER_USERNAME/$REPOSITORY_NAME:$IMAGE_TAG'
+                    sh 'docker run -d -p 3000:3000 --name test-node-app ${DOCKER_IMAGE_NAME}'
                     sh 'sleep 3'
                     sh 'curl localhost:3000 || exit 1'
                     sh 'docker stop test-node-app && docker rm test-node-app'
                 }
             }
         }
-
-        stage('Push Docker Image to Docker Hub') {
+        stage('Push to Docker Hub') {
             steps {
-                script {
-                    // Logging in to Docker Hub
-                    sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
-                    
-                    // Pushing the Docker image to Docker Hub
-                    sh 'docker push $DOCKER_REGISTRY/$REPOSITORY_NAME:$IMAGE_TAG'
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    // Login to Docker Hub
+                    sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
 
-                    // Logging out from Docker Hub
+                    // Push the image to Docker Hub
+                    sh 'docker push ${DOCKER_IMAGE_NAME}'
+
+                    // Logout from Docker Hub
                     sh 'docker logout'
                 }
             }
         }
-
-        stage('Deploy to AWS Elastic Beanstalk') {
+        stage('Deploy to AWS ECS') {
             steps {
-                script {
-                    // Assuming you have a Dockerrun.aws.json file in your repo to configure Elastic Beanstalk
-                    sh 'aws elasticbeanstalk create-application-version --application-name $AWS_EB_APP_NAME --version-label $IMAGE_TAG --source-bundle S3Bucket=$AWS_S3_BUCKET,S3Key=docker/$IMAGE_TAG.tar'
-                    
-                    // Update Elastic Beanstalk environment to deploy the new version
-                    sh 'aws elasticbeanstalk update-environment --environment-name $AWS_EB_ENV_NAME --version-label $IMAGE_TAG'
+                withAWS(credentials: 'AWS-Archit', region: 'ap-south-1') {
+                    script {
+                        // Assuming AWS CLI is configured with appropriate credentials
+                        sh '''
+                        # Update ECS task definition
+                        aws ecs register-task-definition \
+                            --family ${ECS_TASK_DEFINITION} \
+                            --container-definitions "[{
+                                \\"name\\": \\"node-app\\",
+                                \\"image\\": \\"${DOCKER_IMAGE_NAME}\\",
+                                \\"essential\\": true,
+                                \\"memory\\": 512,
+                                \\"cpu\\": 256,
+                                \\"portMappings\\": [{
+                                    \\"containerPort\\": 3000,
+                                    \\"hostPort\\": 3000
+                                }]
+                            }]" \
+                            --region ap-south-1
+
+                        # Update ECS service to use the latest task definition
+                        aws ecs update-service \
+                            --cluster ${ECS_CLUSTER_NAME} \
+                            --service ${ECS_SERVICE_NAME} \
+                            --force-new-deployment \
+                            --region ap-south-1
+                        '''
+                    }
                 }
             }
         }
     }
-
     post {
         success {
             echo 'Deployment completed successfully!'
