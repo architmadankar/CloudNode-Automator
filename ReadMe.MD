@@ -108,7 +108,7 @@ To use this pipeline, ensure you have the **Docker**, **Git**, **AWS**, and **Je
 
 ## ☁️ **AWS Deployment**
 
-The application can be deployed to AWS using **Elastic Container Service (ECS)** with **EC2**. This provides a fully managed environment for running the application in containers without managing the underlying infrastructure.
+The application can be deployed to AWS using **Elastic Container Service (ECS)** with **EC2 Instance**. This provides a fully managed environment for running the application in containers without managing the underlying infrastructure.
 
 ### **Deployment Steps**
 
