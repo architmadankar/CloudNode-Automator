@@ -2,32 +2,39 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'swordx/node-app'
-        AWS_REGION = 'ap-south-1' // Update this to your desired AWS region
-        ECS_CLUSTER = 'your-ecs-cluster-name' // Update with your ECS cluster name
-        ECS_SERVICE = 'your-ecs-service-name' // Update with your ECS service name
-        AWS_ECR_REPO = 'your-aws-ecr-repo-url' // Update with your AWS ECR repository URL
+        AWS_REGION = 'ap-south-1'           // AWS region where your Elastic Beanstalk environment is hosted
+        REPOSITORY_NAME = 'devops-app'         // Your Docker repository name on Docker Hub
+        IMAGE_TAG = 'latest'               // Docker image tag
+        DOCKER_REGISTRY = 'docker.io'      // Docker Hub registry URL - https://plugins.jenkins.io/docker-plugin/
+        AWS_EB_APP_NAME = 'archit-devops-app'    // Your Elastic Beanstalk application name
+        AWS_EB_ENV_NAME = 'archit-devops-app-env'     // Your Elastic Beanstalk environment name
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')  // Jenkins AWS credentials - https://plugins.jenkins.io/aws-credentials/
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key') // Jenkins AWS credentials 
     }
 
     stages {
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/architmadankar/devops-task-archit.git'
+                script {
+                    // Pulling the source code from GitHub repository
+                    git 'https://github.com/architmadankar/devops-task-archit.git'
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t ${DOCKER_IMAGE} .'
+                    // Building the Docker image
+                    sh 'docker build -t $DOCKER_REGISTRY/$REPOSITORY_NAME:$IMAGE_TAG .'
                 }
             }
         }
 
-        stage('Test Application') {
+        stage('Run Tests') {
             steps {
                 script {
-                    sh 'docker run -d -p 3000:3000 --name test-node-app ${DOCKER_IMAGE}'
+                    sh 'docker run -d -p 3000:3000 --name test-node-app $DOCKER_USERNAME/$REPOSITORY_NAME:$IMAGE_TAG'
                     sh 'sleep 3'
                     sh 'curl localhost:3000 || exit 1'
                     sh 'docker stop test-node-app && docker rm test-node-app'
@@ -35,52 +42,29 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image to Registry') {
+        stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
-                    // Push to Docker Hub or AWS ECR
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
-                        sh 'docker tag ${DOCKER_IMAGE} ${DOCKER_USERNAME}/sed-node-app:latest'
-                        sh 'docker push ${DOCKER_USERNAME}/sed-node-app:latest'
-                    }
+                    // Logging in to Docker Hub
+                    sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
                     
-                    // If pushing to AWS ECR instead of DockerHub
-                    /*
-                    withCredentials([[$class: 'AmazonWebServicesCredentials', credentialsId: 'aws-credentials']]) {
-                        sh 'aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ECR_REPO}'
-                        sh 'docker tag ${DOCKER_IMAGE}:latest ${AWS_ECR_REPO}/sed-node-app:latest'
-                        sh 'docker push ${AWS_ECR_REPO}/sed-node-app:latest'
-                    }
-                    */
+                    // Pushing the Docker image to Docker Hub
+                    sh 'docker push $DOCKER_REGISTRY/$REPOSITORY_NAME:$IMAGE_TAG'
+
+                    // Logging out from Docker Hub
+                    sh 'docker logout'
                 }
             }
         }
 
-        stage('Deploy to AWS ECS') {
+        stage('Deploy to AWS Elastic Beanstalk') {
             steps {
                 script {
-                    // ECS task definition update and deployment to ECS
-                    withCredentials([[$class: 'AmazonWebServicesCredentials', credentialsId: 'aws-credentials']]) {
-                        // Register new ECS Task Definition with the updated Docker image
-                        sh '''aws ecs register-task-definition \
-                            --family node-app-task \
-                            --container-definitions '[{
-                                "name": "node-app",
-                                "image": "${AWS_ECR_REPO}/sed-node-app:latest", 
-                                "memory": 512,
-                                "cpu": 256,
-                                "essential": true,
-                                "portMappings": [{"containerPort": 3000, "hostPort": 3000}]
-                            }]' --region ${AWS_REGION}'''
-
-                        // Update ECS Service to use the new Task Definition
-                        sh '''aws ecs update-service \
-                            --cluster ${ECS_CLUSTER} \
-                            --service ${ECS_SERVICE} \
-                            --task-definition node-app-task \
-                            --region ${AWS_REGION}'''
-                    }
+                    // Assuming you have a Dockerrun.aws.json file in your repo to configure Elastic Beanstalk
+                    sh 'aws elasticbeanstalk create-application-version --application-name $AWS_EB_APP_NAME --version-label $IMAGE_TAG --source-bundle S3Bucket=$AWS_S3_BUCKET,S3Key=docker/$IMAGE_TAG.tar'
+                    
+                    // Update Elastic Beanstalk environment to deploy the new version
+                    sh 'aws elasticbeanstalk update-environment --environment-name $AWS_EB_ENV_NAME --version-label $IMAGE_TAG'
                 }
             }
         }
@@ -88,10 +72,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline executed successfully!'
+            echo 'Deployment completed successfully!'
         }
         failure {
-            echo 'Pipeline failed!'
+            echo 'There was an issue with the pipeline.'
         }
     }
 }

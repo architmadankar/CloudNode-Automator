@@ -102,13 +102,23 @@ Note: There is a Jenkins.local file to test the application locally with Docker.
 - The pipeline is defined in the `Jenkinsfile`. It uses stages such as **Clone Repository**, **Build Docker Image**, **Test Application**, **Push to Docker Hub** and **Deploy to AWS ECS**.
 - You can view the Jenkins pipeline in the [Jenkinsfile](Jenkinsfile) located in the root directory.
 
-To use this pipeline, ensure you have the **Docker**, **Git**, **AWS**, and **Jenkins** set up with the necessary credentials for Docker Hub and AWS mentioned in **Jenkinsfile**.
+To use this pipeline, ensure you have the **Docker**, **Git**, **AWS CLI**, and **Jenkins** set up with the necessary credentials for Docker Hub and AWS mentioned in **Jenkinsfile**.
 
 ---
 
 ## ☁️ **AWS Deployment**
 
 The application can be deployed to AWS using **Elastic Container Service (ECS)** with **EC2 Instance**. This provides a fully managed environment for running the application in containers without managing the underlying infrastructure.
+
+Firstly configure your **AWS CLI**
+```bash
+ ╭─sed@root3d
+ ╰─λ aws configure
+AWS Access Key ID [None]: AKIAVIXXXXXXXXXXX
+AWS Secret Access Key [None]: +dyy7/i7oMT+fXXXXXXXXXXXXXXXXXX4ABg
+Default region name [None]: ap-south-1
+Default output format [None]: 
+```
 
 ### **Deployment Steps**
 

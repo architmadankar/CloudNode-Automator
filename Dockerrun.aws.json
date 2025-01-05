@@ -1,0 +1,13 @@
+{
+    "AWSEBDockerrunVersion": "2",
+    "Image": {
+      "Name": "docker.io/swordx/devops-app:latest",  
+      "Update": "true"
+    },
+    "Ports": [
+      {
+        "ContainerPort": 3000  
+      }
+    ]
+  }
+  
