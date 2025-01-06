@@ -149,7 +149,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🔗 **Links**
 
 - **GitHub Repository**: [https://github.com/architmadankar/devops-task-archit](https://github.com/architmadankar/devops-task-archit)
-- **Deployed Application**: [AWS](http://your-deployed-app.com)
+- **Deployed Application**: [AWS](http://13.233.160.74:3000/)
 
 ---
 
