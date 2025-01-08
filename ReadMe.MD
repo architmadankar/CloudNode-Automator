@@ -15,6 +15,8 @@
 
 ## 🛠️ **Technologies Used**
 
+`Node.js` | `Docker` | `Jenkins` | `AWS ECS` | `AWS CloudWatch`  
+
 - **Node.js**: Server-side JavaScript runtime environment
 - **Express.js**: Fast, minimalist web framework for Node.js
 - **Docker**: Containerization of the Node.js app
