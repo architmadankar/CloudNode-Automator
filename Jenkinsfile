@@ -5,7 +5,7 @@ pipeline {
     agent any
     environment {
         DOCKER_IMAGE_NAME = 'swordx/archit-node-app'  // Docker image name
-        ECS_CLUSTER_NAME = 'architx'        // AWS ECS cluster name
+        ECS_CLUSTER_NAME = 'DevOps_test'        // AWS ECS cluster name
         ECS_SERVICE_NAME = 'MyService'        // ECS service name
         ECS_TASK_DEFINITION = 'MyTask' // ECS task definition name
     }
@@ -59,11 +59,12 @@ pipeline {
                                 \\"name\\": \\"node-app\\",
                                 \\"image\\": \\"${DOCKER_IMAGE_NAME}\\",
                                 \\"essential\\": true,
-                                \\"memory\\": 512,
-                                \\"cpu\\": 256,
+                                \\"memory\\": 3072,
+                                \\"cpu\\": 1024,
                                 \\"portMappings\\": [{
                                     \\"containerPort\\": 3000,
-                                    \\"hostPort\\": 3000
+                                    \\"hostPort\\": 3000,
+                                    \\"protocol\\": \\"tcp\\"
                                 }]
                             }]" \
                             --region ap-south-1
